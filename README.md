@@ -1,4 +1,4 @@
-# Lethal and Dangerous — Custom Patches (Algorithm Fixes)
+# Son of company — Custom Patches (Algorithm Fixes)
 
 This folder contains two modified `.dll` files with updated algorithms and compatibility fixes for the **LethalAndDangerous** modpack.
 
