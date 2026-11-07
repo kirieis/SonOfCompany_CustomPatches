@@ -1,6 +1,6 @@
 # Son of company — Custom Patches (Algorithm Fixes)
 
-This folder contains two modified `.dll` files with updated algorithms and compatibility fixes for the **LethalAndDangerous** modpack.
+This folder contains two modified `.dll` files with updated algorithms and compatibility fixes for the **SonOfCompanys** modpack.
 
 ## 1. Modified Files
 
@@ -25,7 +25,7 @@ This folder contains two modified `.dll` files with updated algorithms and compa
 
 ### Method 1: Thunderstore Mod Manager
 
-1. Open Thunderstore Mod Manager and select the profile containing the **LethalAndDangerous** modpack.
+1. Open Thunderstore Mod Manager and select the profile containing the **SonOfCompanys** modpack.
 2. Click **Settings** (the gear icon on the left), then select **Browse profile folder**.
 3. In the opened directory, navigate to `BepInEx/plugins/`.
 4. Copy the two folders from this package (`Cucumis-LethalRPG` and `FlipMods-BetterStamina`) into the `plugins` directory.
