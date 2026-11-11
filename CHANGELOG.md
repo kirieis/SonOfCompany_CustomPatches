@@ -15,7 +15,16 @@
 - **Terminal Store Item Price & Index Desync Fixed**:
   - Dynamically synchronizes all `buy` keyword `CompatibleNouns` and `buyItemIndex` pointers in the Terminal with `buyableItemsList`.
   - Fixes the bug where purchasing Pistol at $80 wrongly prompted a $500 confirmation and purchased an RPG-7. All store items now purchase the exact target item at its authored price.
-  - Set Pistol price correctly to **$80**.
+  - Set Pistol price to **$125**.
+  - Rebalanced all firearm prices (+**$40** increase, excluding RPG and Grenade Launcher):
+    - **Pistol**: **$125**
+    - **Piggy Revolver**: **$120** (was $80)
+    - **Piggy M16A Rifle**: **$240** (was $200)
+    - **Bolt-Action Rifle**: **$205** (was $165)
+    - **Heavy Shotgun**: **$150** (was $110)
+    - **Double-Barreled Shotgun**: **$706** (was $666)
+    - **Flame Thrower**: **$160** (was $120)
+    - **RPG-7**: Unchanged at **$500**
 - **Piggy Rifle Renamed to "M16A Rifle"**:
   - Renamed Piggy's Rifle in the store to **M16A Rifle** (priced at **$200**).
   - Terminal buy command noun updated to `m16a` / `m16a rifle` to prevent accidental conflict with `rifle rounds`.

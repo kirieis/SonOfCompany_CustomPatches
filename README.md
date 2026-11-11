@@ -21,7 +21,7 @@ The main plugin **`SonOfCompany_CustomPatches.dll`** is designed as an **indepen
   - `> 25m`: **3 damage**
 - **Piggy M16A Rifle**:
   - Renamed from "Rifle" to **"M16A Rifle"** in the Terminal Store to avoid conflict with `rifle rounds`.
-  - Available for **$200** via terminal command: `buy m16a` or `buy m16a rifle`.
+  - Available for **$240** ($200 + $40) via terminal command: `buy m16a` or `buy m16a rifle`.
   - Magazine available for **$60**.
   - Pressing **[Q]** displays exact remaining ammo loaded (e.g., `[Check ammo : [Q] [18/30]]`).
 - **Piggy Axe**: Balanced hit force alternating between 2 and 3 to achieve an exact average of **2.5**. Consumes 0.10f stamina.
@@ -30,13 +30,16 @@ The main plugin **`SonOfCompany_CustomPatches.dll`** is designed as an **indepen
 - **Animation Conflict Fix**: Automatically restores the player's original animator controller when stowing/dropping PiggyVarietyMod weapons or switching to BetterArmory, resolving pose lock bugs.
 
 ### 🛡️ BetterArmory & Store
-- **Weapon Statistics Rebalance**:
-  - Fire Axe: Hit force = 5, stamina consumption = 0.20f (2x Piggy Axe).
+- **Weapon Statistics & Store Prices**:
+  - Fire Axe: Hit force = 5, stamina consumption = 0.20f (2x Piggy Axe). Price: $150.
   - Grenade Launcher: Outer blast radius extended to 8m.
-  - Kar98K (Bolt-action): 60 body / 140 headshot (close), 40 body / 80 headshot (far).
-  - X18 Pistol: 28 body / 68 headshot (close), 18 body / 40 headshot (far). Store price: **$80**.
-  - RPG-7: 5m kill radius, 3m splash damage radius.
-  - Chainsaw: 2 damage / tick.
+  - Kar98K (Bolt-action): 60 body / 140 headshot (close), 40 body / 80 headshot (far). Store price: **$205** ($165 + $40).
+  - Heavy Shotgun: Store price: **$150** ($110 + $40).
+  - X18 Pistol: 28 body / 68 headshot (close), 18 body / 40 headshot (far). Store price: **$125**.
+  - Double-Barreled Shotgun: Store price: **$706** ($666 + $40).
+  - Flame Thrower: Store price: **$160** ($120 + $40).
+  - RPG-7: 5m kill radius, 3m splash damage radius. Store price: **$500** (unchanged).
+  - Chainsaw: 2 damage / tick. Price: $400.
   - Removed MX16A4 (Assault Rifle) and BetterArmory duplicate Revolver from the Terminal Store (`Purchasable In Shop = false`).
 - **Terminal Store Index & Price Synchronization**:
   - Dynamically synchronizes all `buy` command keywords and `buyItemIndex` pointers in the Terminal with `buyableItemsList`.
