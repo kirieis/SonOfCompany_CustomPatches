@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.3.1] - 2026-11-11
+### Added
+- **Russian Roulette Mechanic (Piggy Revolver Exclusive)**:
+  - Players holding the Piggy Revolver with **exactly 1 loaded bullet** and cylinder closed can press **[E]** to spin the cylinder.
+  - Plays an authentic ratchet spin audio effect (`roulette_spin.mp3`).
+  - The cylinder randomly places the single bullet into 1 of the 6 chambers and sets hammer to starting position.
+  - Can only be spun once per cylinder closure. Opening the cylinder (**[Q]**) immediately cancels the roulette cycle.
+  - Firing an empty chamber produces a metallic dry-fire click, advances the cylinder index sequentially (with wrap-around), and does not consume ammo or deal damage.
+  - Firing the bullet chamber executes the original shot, deals full damage, and consumes the bullet.
+  - Completely isolated per Revolver instance; BetterArmory Revolver and all other weapons remain completely unaffected.
+
+### Changed & Fixed
+- **Terminal Store Item Price & Index Desync Fixed**:
+  - Dynamically synchronizes all `buy` keyword `CompatibleNouns` and `buyItemIndex` pointers in the Terminal with `buyableItemsList`.
+  - Fixes the bug where purchasing Pistol at $80 wrongly prompted a $500 confirmation and purchased an RPG-7. All store items now purchase the exact target item at its authored price.
+  - Set Pistol price correctly to **$80**.
+- **Piggy Rifle Renamed to "M16A Rifle"**:
+  - Renamed Piggy's Rifle in the store to **M16A Rifle** (priced at **$200**).
+  - Terminal buy command noun updated to `m16a` / `m16a rifle` to prevent accidental conflict with `rifle rounds`.
+- **Duplicate Revolver Removed from Store**:
+  - Removed BetterArmory's Revolver from the Terminal Store (`Purchasable In Shop = false` in both config and native weapon registration).
+  - Terminal store now cleanly lists only Piggy's Revolver at **$80**.
+- **Piggy Revolver Monster Damage Rebalanced**:
+  - `≤ 10m`: **5 damage**
+  - `> 10m - <= 25m`: **4 damage**
+  - `> 25m`: **3 damage**
+- **Performance / Memory Optimization (Stutter/Lag Fix)**:
+  - Removed the periodic 3-minute `Resources.UnloadUnusedAssets()` trigger during active gameplay.
+  - Memory cleanup and asset unloading now runs **only when the ship leaves a moon** (`ShipHasLeft`), completely eliminating in-game freeze and stutter spikes.
+
+---
+
 ## [1.3.0] - 2026-11-10
 ### Added
 - **FairAI (`TheFluff-FairAI-1.6.1`)**: Added FairAI so monsters and traps interact fairly with each other and the environment.

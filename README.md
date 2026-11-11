@@ -9,24 +9,42 @@ The main plugin **`SonOfCompany_CustomPatches.dll`** is designed as an **indepen
 ## 1. New Patch Features (`SonOfCompany_CustomPatches.dll`)
 
 ### 🔫 PiggyVarietyMod (Weapons & Ammunition)
-- **Distance-Based Revolver Damage**:
-  - Monster damage based on distance: `<10m`: 4.5 hits | `<25m`: 3.5 hits | `>=25m`: 2.0 hits (fractional damage accumulates across shots).
-  - Player damage: `<10m`: 55 HP | `<25m`: 35 HP | `>=25m`: 20 HP (Headshot multiplier doubles damage to 150 / 100 / 70 HP).
-- **Piggy Axe**: Balanced hit force alternating between 2 and 3 to achieve an exact average of **2.5**.
+- **Russian Roulette Mechanic**:
+  - Exclusive to Piggy's Revolver when loaded with **exactly 1 bullet** and cylinder closed.
+  - Press **[E]** to spin the cylinder: plays custom ratchet spin sound (`roulette_spin.mp3`) and places the bullet randomly into 1 of the 6 chambers.
+  - Can only be spun once per cylinder cycle. Opening cylinder (**[Q]**) immediately cancels the roulette cycle.
+  - Triggering an empty chamber plays a dry-fire click, advances the chamber sequentially, and consumes no ammo.
+  - Triggering the loaded chamber fires the shot, deals full damage, and consumes the bullet.
+- **Distance-Based Revolver Monster Damage**:
+  - `≤ 10m`: **5 damage**
+  - `> 10m - <= 25m`: **4 damage**
+  - `> 25m`: **3 damage**
+- **Piggy M16A Rifle**:
+  - Renamed from "Rifle" to **"M16A Rifle"** in the Terminal Store to avoid conflict with `rifle rounds`.
+  - Available for **$200** via terminal command: `buy m16a` or `buy m16a rifle`.
+  - Magazine available for **$60**.
+  - Pressing **[Q]** displays exact remaining ammo loaded (e.g., `[Check ammo : [Q] [18/30]]`).
+- **Piggy Axe**: Balanced hit force alternating between 2 and 3 to achieve an exact average of **2.5**. Consumes 0.10f stamina.
 - **Speedloader Item**: Quickly reloads 6 bullets into the Revolver cylinder when opened (`R: to use speedloader`). Price: $80, Weight: 0.5 lb.
 - **Ammo Box Item**: Ammo case containing 4 Speedloaders. Price: $300, Weight: 3 lb.
 - **Animation Conflict Fix**: Automatically restores the player's original animator controller when stowing/dropping PiggyVarietyMod weapons or switching to BetterArmory, resolving pose lock bugs.
 
 ### 🛡️ BetterArmory & Store
 - **Weapon Statistics Rebalance**:
+  - Fire Axe: Hit force = 5, stamina consumption = 0.20f (2x Piggy Axe).
   - Grenade Launcher: Outer blast radius extended to 8m.
   - Kar98K (Bolt-action): 60 body / 140 headshot (close), 40 body / 80 headshot (far).
-  - X18 Pistol: 28 body / 68 headshot (close), 18 body / 40 headshot (far).
+  - X18 Pistol: 28 body / 68 headshot (close), 18 body / 40 headshot (far). Store price: **$80**.
   - RPG-7: 5m kill radius, 3m splash damage radius.
   - Chainsaw: 2 damage / tick.
-  - Removed MX16A4 (Assault Rifle) from the Terminal Store.
-- **Silver Bullets ($500)**: Can shoot down and banish the Ghost Girl (`DressGirlAI`).
+  - Removed MX16A4 (Assault Rifle) and BetterArmory duplicate Revolver from the Terminal Store (`Purchasable In Shop = false`).
+- **Terminal Store Index & Price Synchronization**:
+  - Dynamically synchronizes all `buy` command keywords and `buyItemIndex` pointers in the Terminal with `buyableItemsList`.
+  - Fixes the issue where selecting Pistol at $80 wrongly prompted a $500 confirmation for an RPG-7. All items now correctly purchase their intended item at their exact listed price.
 - **Independent Save Bridge**: Automatically resolves and stores reserve ammo keys based directly on the active save file name (`currentSaveFileName`), eliminating `SaveIdentityApi` missing warnings.
+
+### ⚡ Performance & Memory Optimization
+- Memory leak protection and unused asset unloading now triggers **only when the ship leaves a moon** (`ShipHasLeft`), eliminating periodic 3-minute freeze and stutter spikes during exploration.
 
 ### 🎒 Tactical Belt (Ammo Belt & HUD)
 - Wearable ammunition belt featuring a custom HUD slot displaying loaded ammo type and current count.
