@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>SonOfCompany_CustomPatches</AssemblyName>
+    <RootNamespace>SonOfCompany_CustomPatches</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Assembly-CSharp.dll" />
+    <Reference Include="UnityEngine" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.dll" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.CoreModule.dll" />
+    <Reference Include="UnityEngine.PhysicsModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.PhysicsModule.dll" />
+    <Reference Include="UnityEngine.AudioModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.AudioModule.dll" />
+    <Reference Include="UnityEngine.AnimationModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.AnimationModule.dll" />
+    <Reference Include="UnityEngine.UI" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.UI.dll" />
+    <Reference Include="UnityEngine.UIModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.UIModule.dll" />
+    <Reference Include="Unity.TextMeshPro" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.TextMeshPro.dll" />
+    <Reference Include="Unity.Netcode.Runtime" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.Netcode.Runtime.dll" />
+    <Reference Include="Unity.InputSystem" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.InputSystem.dll" />
+    <Reference Include="UnityEngine.InputLegacyModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.InputLegacyModule.dll" />
+    <Reference Include="UnityEngine.UnityWebRequestModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.UnityWebRequestModule.dll" />
+    <Reference Include="UnityEngine.UnityWebRequestAudioModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll" />
+    
+    <Reference Include="BepInEx" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\core\BepInEx.dll" />
+    <Reference Include="0Harmony" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\core\0Harmony.dll" />
+
+    <Reference Include="LethalLib" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Evaisa-LethalLib\LethalLib\LethalLib.dll" />
+    <Reference Include="LethalCompanyInputUtils" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Rune580-LethalCompany_InputUtils\LethalCompanyInputUtils\LethalCompanyInputUtils.dll" />
+    <Reference Include="PiggyVarietyMod" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\DevEisia-PiggyVarietyModFixed\PiggyVarietyMod.dll" />
+    <Reference Include="LethalRPG" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Cucumis-LethalRPG\LethalRPG.dll" />
+    <Reference Include="BetterStamina" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\FlipMods-BetterStamina\BetterStamina.dll" />
+    <Reference Include="SellBodies" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Entity378-SellBodiesFixed\SellBodies\SellBodies.dll" />
+    <Reference Include="WeatherRegistry" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\mrov-WeatherRegistry\WeatherRegistry.dll" />
+
+    <Reference Include="EyeMonster" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\EyeMonster.dll" />
+    <Reference Include="SimonSays" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\SimonSays.dll" />
+    <Reference Include="Y4NGZBeetleBull" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZBeetleBull.dll" />
+    <Reference Include="Y4NGZCreepyDoll" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZCreepyDoll.dll" />
+    <Reference Include="Y4NGZCrookedChoir" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZCrookedChoir.dll" />
+    <Reference Include="Y4NGZFlyingTV" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZFlyingTV.dll" />
+    <Reference Include="Y4NGZHarmonic" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZHarmonic.dll" />
+    <Reference Include="Y4NGZModer" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZModer.dll" />
+    <Reference Include="Y4NGZPoltergeist" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZPoltergeist.dll" />
+    <Reference Include="Y4NGZScissorsCreature" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\Y4NGZScissorsCreature.dll" />
+  </ItemGroup>
+
+</Project>
