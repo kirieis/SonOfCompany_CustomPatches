@@ -59,6 +59,7 @@ namespace SonOfCompany_CustomPatches
                 HarmonyInstance.PatchAll(typeof(Patches.LethalRpgPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.AnomaliesPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.WeatherRegistryPatches));
+                HarmonyInstance.PatchAll(typeof(Patches.MaskedEnemySuitCopyPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.MemoryLeakFixes));
                 HarmonyInstance.PatchAll(typeof(Items.ItemRegistryPatches));
 
