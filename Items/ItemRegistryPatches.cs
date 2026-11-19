@@ -15,6 +15,7 @@ namespace SonOfCompany_CustomPatches.Items
         public static Item RifleItemRef { get; private set; }
         public static Item ExecutionBulletItemRef { get; private set; }
         public static Item ShotgunShellItemRef { get; private set; }
+        public static Item BrokenRevolverItemRef { get; private set; }
 
         private static bool _registered = false;
 
@@ -427,6 +428,63 @@ namespace SonOfCompany_CustomPatches.Items
                     else if (n.Contains("magazine") || n.Contains("mag"))
                     {
                         s.rarity = 70;
+                    }
+                }
+
+                // 3. Khởi tạo Broken Revolver scrap item ($31 - $91) và thay thế toàn bộ Revolver scrap trên moon
+                if (BrokenRevolverItemRef == null)
+                {
+                    Item[] allItems = Resources.FindObjectsOfTypeAll<Item>();
+                    Item piggyRev = Array.Find(allItems, it => it != null && it.itemName == "Revolver" && it.spawnPrefab != null && it.spawnPrefab.GetComponent("RevolverItem") != null);
+                    if (piggyRev != null)
+                    {
+                        BrokenRevolverItemRef = ScriptableObject.Instantiate(piggyRev);
+                        BrokenRevolverItemRef.name = "BrokenRevolverItem";
+                        BrokenRevolverItemRef.itemName = "Broken Revolver";
+                        BrokenRevolverItemRef.minValue = 31;
+                        BrokenRevolverItemRef.maxValue = 91;
+                        BrokenRevolverItemRef.isScrap = true;
+                        BrokenRevolverItemRef.creditsWorth = 0;
+                        BrokenRevolverItemRef.requiresBattery = false;
+                        BrokenRevolverItemRef.batteryUsage = 0f;
+
+                        if (BrokenRevolverItemRef.spawnPrefab != null)
+                        {
+                            BrokenRevolverItemRef.spawnPrefab = UnityEngine.Object.Instantiate(BrokenRevolverItemRef.spawnPrefab);
+                            BrokenRevolverItemRef.spawnPrefab.name = "BrokenRevolver";
+
+                            var scanNode = BrokenRevolverItemRef.spawnPrefab.GetComponentInChildren<ScanNodeProperties>();
+                            if (scanNode != null)
+                            {
+                                scanNode.headerText = "Broken Revolver";
+                                scanNode.subText = "Value: ";
+                                scanNode.nodeType = 2; // Scrap
+                                scanNode.minRange = 1;
+                                scanNode.maxRange = 13;
+                            }
+
+                            var grabbable = BrokenRevolverItemRef.spawnPrefab.GetComponent<GrabbableObject>();
+                            if (grabbable != null)
+                            {
+                                grabbable.itemProperties = BrokenRevolverItemRef;
+                                grabbable.customGrabTooltip = "Pick up Broken Revolver : [E]";
+                            }
+                        }
+                        CustomPatchesPlugin.Log.LogInfo("[ItemRegistry] Created Broken Revolver scrap item (value $31 - $91).");
+                    }
+                }
+
+                if (BrokenRevolverItemRef != null)
+                {
+                    for (int i = 0; i < scrapList.Count; i++)
+                    {
+                        var s = scrapList[i];
+                        if (s != null && s.spawnableItem != null && s.spawnableItem.itemName.Equals("Revolver", StringComparison.OrdinalIgnoreCase))
+                        {
+                            int originalRarity = s.rarity > 0 ? s.rarity : 70;
+                            scrapList[i] = new SpawnableItemWithRarity(BrokenRevolverItemRef, originalRarity);
+                            CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Replaced standard Revolver scrap with Broken Revolver on {__instance.currentLevel.PlanetName} (rarity: {originalRarity}).");
+                        }
                     }
                 }
             }

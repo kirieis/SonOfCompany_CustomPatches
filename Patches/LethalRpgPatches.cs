@@ -101,6 +101,13 @@ namespace SonOfCompany_CustomPatches.Patches
                     marksmanDef.Description = "Reload all guns faster (Shotgun, Revolver, Rifle).";
                 }
 
+                // Brawler UI: Áp dụng lên toàn bộ vũ khí cận chiến (Shovel, Knife, Axe, v.v.)
+                var brawlerDef = Upgrades.Get(UpgradeType.Brawler);
+                if (brawlerDef != null)
+                {
+                    brawlerDef.Description = "Shovels, signs, knives, axes and all melee weapons hit harder with full bonus.";
+                }
+
                 // Unique / Ultimate XP requirement += 25
                 if (!_xpAdjusted && Upgrades.All != null)
                 {
@@ -236,6 +243,74 @@ namespace SonOfCompany_CustomPatches.Patches
                     __result.DefaultMaxLevel = CustomPatchesPlugin.StrengthMaxLevel.Value;
                 }
             }
+        }
+
+        // ---------------------------------------------------------
+        // BRAWLER / TOOL UPGRADE APPLIED TO ALL MELEE WEAPONS (AXE, KNIFE, ETC.)
+        // ---------------------------------------------------------
+        [HarmonyPatch]
+        public static class AxeItem_HitAxe_BrawlerPatch
+        {
+            [HarmonyTargetMethod]
+            private static MethodBase TargetMethod() => AccessTools.Method("PiggyVarietyMod.Patches.AxeItem:HitAxe");
+
+            [HarmonyPrefix]
+            private static void Prefix(object __instance, out int __state)
+            {
+                __state = 0;
+                try
+                {
+                    FieldInfo forceField = AccessTools.Field(__instance.GetType(), "axeHitForce");
+                    __state = (int)forceField.GetValue(__instance);
+                    FieldInfo holderField = AccessTools.Field(__instance.GetType(), "previousPlayerHeldBy");
+                    PlayerControllerB player = (PlayerControllerB)holderField.GetValue(__instance);
+                    if (player != null)
+                    {
+                        float bonus = RpgState.BrawlerBonus(player);
+                        int intBonus = (int)Math.Round(bonus);
+                        if (intBonus > 0)
+                        {
+                            forceField.SetValue(__instance, __state + intBonus);
+                            CustomPatchesPlugin.Log.LogInfo($"[LethalRPG] Brawler bonus applied to Axe! Force: {__state} -> {__state + intBonus}");
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            [HarmonyFinalizer]
+            private static void Finalizer(object __instance, int __state)
+            {
+                try
+                {
+                    FieldInfo forceField = AccessTools.Field(__instance.GetType(), "axeHitForce");
+                    forceField.SetValue(__instance, __state);
+                }
+                catch { }
+            }
+        }
+
+        // Bù thêm 50% còn lại cho Knife để ngang với Shovel (vì vanilla LethalRPG chỉ tăng 50% cho Knife)
+        [HarmonyPatch(typeof(KnifeItem), "HitKnife")]
+        [HarmonyPrefix]
+        private static void KnifeItem_HitKnife_FullBrawlerBonus(KnifeItem __instance)
+        {
+            try
+            {
+                var player = __instance.previousPlayerHeldBy;
+                if (player != null)
+                {
+                    float bonus = RpgState.BrawlerBonus(player);
+                    // LethalRPG already added 0.5f * bonus. We add the remaining 0.5f * bonus so Knife reaches 1.0f bonus (ngang shovel)
+                    int remainingBonus = (int)Math.Round(0.5f * bonus);
+                    if (remainingBonus > 0)
+                    {
+                        __instance.knifeHitForce += remainingBonus;
+                        CustomPatchesPlugin.Log.LogInfo($"[LethalRPG] Knife Brawler bonus boosted to 100% (equal to Shovel)! +{remainingBonus} extra force.");
+                    }
+                }
+            }
+            catch { }
         }
     }
 }

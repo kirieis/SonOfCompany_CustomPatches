@@ -83,5 +83,61 @@ namespace SonOfCompany_CustomPatches.Patches
             }
             catch { }
         }
+
+        // ---------------------------------------------------------
+        // 4. FOGGY WEATHER: 10% FOG INSIDE INTERIOR (90% REDUCED)
+        // ---------------------------------------------------------
+        private static float _originalFogMeanFreePath = -1f;
+        private static bool _wasInsideFactory = false;
+
+        [HarmonyPatch(typeof(GameNetcodeStuff.PlayerControllerB), "Update")]
+        [HarmonyPostfix]
+        private static void PlayerControllerB_Update_FogReduction(GameNetcodeStuff.PlayerControllerB __instance)
+        {
+            if (__instance == null || !__instance.isPlayerControlled || __instance != GameNetworkManager.Instance?.localPlayerController)
+                return;
+
+            try
+            {
+                var tod = TimeOfDay.Instance;
+                if (tod == null || tod.foggyWeather == null) return;
+
+                bool isInside = __instance.isInsideFactory;
+                if (isInside != _wasInsideFactory)
+                {
+                    _wasInsideFactory = isInside;
+
+                    if (isInside)
+                    {
+                        // Player entered facility
+                        if (_originalFogMeanFreePath < 0f)
+                        {
+                            _originalFogMeanFreePath = tod.foggyWeather.parameters.meanFreePath;
+                        }
+                        // 10% fog density means 10x meanFreePath
+                        tod.foggyWeather.parameters.meanFreePath = _originalFogMeanFreePath * 10.0f;
+                        CustomPatchesPlugin.Log.LogInfo($"[WeatherFix] Fog reduced to 10% inside facility (meanFreePath: {_originalFogMeanFreePath} -> {tod.foggyWeather.parameters.meanFreePath}).");
+                    }
+                    else
+                    {
+                        // Player exited to outside
+                        if (_originalFogMeanFreePath > 0f)
+                        {
+                            tod.foggyWeather.parameters.meanFreePath = _originalFogMeanFreePath;
+                            CustomPatchesPlugin.Log.LogInfo($"[WeatherFix] Fog restored to 100% outside facility (meanFreePath: {_originalFogMeanFreePath}).");
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        [HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
+        [HarmonyPostfix]
+        private static void DespawnPropsAtEndOfRound_ResetFog()
+        {
+            _originalFogMeanFreePath = -1f;
+            _wasInsideFactory = false;
+        }
     }
 }

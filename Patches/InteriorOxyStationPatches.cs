@@ -119,17 +119,69 @@ namespace SonOfCompany_CustomPatches.Patches
     public static class InteriorOxyStationPatches
     {
         private static List<GameObject> _spawnedStations = new List<GameObject>();
+        private static readonly string[] HazardRanks = { "SAFE", "D", "C", "B", "A", "S" };
 
         public static bool IsHazardLevelBOrHigher(SelectableLevel level)
         {
             if (level == null || string.IsNullOrEmpty(level.riskLevel)) return false;
             string risk = level.riskLevel.Trim().ToUpper();
 
-            if (risk.StartsWith("B") || risk.StartsWith("A") || risk.StartsWith("S"))
+            // S, S+, S++, S+++, A, A+, B, B+
+            if (risk.StartsWith("S") || risk.StartsWith("A") || risk.StartsWith("B"))
             {
                 return true;
             }
             return false;
+        }
+
+        // ---------------------------------------------------------
+        // GUARANTEE SHIP OXYGEN CHARGER CAN ALWAYS REFILL OXYTANK
+        // ---------------------------------------------------------
+        [HarmonyPatch]
+        public static class ShipOxyChargerRefillFixPatch
+        {
+            [HarmonyTargetMethod]
+            private static MethodBase TargetMethod()
+            {
+                Type t = AccessTools.TypeByName("Oxygen.Items.OxyCharger");
+                return AccessTools.Method(t, "FillOxygen");
+            }
+
+            [HarmonyPrefix]
+            private static void Prefix(object __instance)
+            {
+                try
+                {
+                    // Ensure OxyCharger.Instance points to this valid ship charger
+                    Type t = AccessTools.TypeByName("Oxygen.Items.OxyCharger");
+                    if (t != null && __instance != null)
+                    {
+                        PropertyInfo instProp = AccessTools.Property(t, "Instance");
+                        instProp?.SetValue(null, __instance);
+                    }
+                }
+                catch { }
+            }
+
+            [HarmonyPostfix]
+            private static void Postfix(object __instance)
+            {
+                try
+                {
+                    // Failsafe: directly set OxygenAmount to 100% on interaction to guarantee refill
+                    Type logicType = AccessTools.TypeByName("Oxygen.General.OxygenLogic");
+                    if (logicType != null)
+                    {
+                        PropertyInfo prop = AccessTools.Property(logicType, "OxygenAmount");
+                        if (prop != null)
+                        {
+                            prop.SetValue(null, 1.0f);
+                            CustomPatchesPlugin.Log.LogInfo("[ShipOxygenFix] Player oxygen refilled to 100% at ship oxygen station.");
+                        }
+                    }
+                }
+                catch { }
+            }
         }
 
         [HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
@@ -170,6 +222,10 @@ namespace SonOfCompany_CustomPatches.Patches
                     CustomPatchesPlugin.Log.LogWarning("[InteriorOxygen] OxygenBase.Instance.oxyCharger prefab not found.");
                     return;
                 }
+
+                // SAVE REAL SHIP OxyCharger.Instance BEFORE INSTANTIATING
+                Type oxyChargerType = AccessTools.TypeByName("Oxygen.Items.OxyCharger");
+                object shipChargerInstance = AccessTools.Property(oxyChargerType, "Instance")?.GetValue(null);
 
                 int seed = (StartOfRound.Instance != null) ? StartOfRound.Instance.randomMapSeed + 8888 : 99999;
                 System.Random rnd = new System.Random(seed);
@@ -219,6 +275,13 @@ namespace SonOfCompany_CustomPatches.Patches
 
                     _spawnedStations.Add(stationObj);
                     CustomPatchesPlugin.Log.LogInfo($"[InteriorOxygen] Spawned stationary oxygen refill station at {spawnPos} on moon {__instance.currentLevel.PlanetName} (Risk: {__instance.currentLevel.riskLevel}).");
+                }
+
+                // RESTORE REAL SHIP OxyCharger.Instance
+                if (shipChargerInstance != null && oxyChargerType != null)
+                {
+                    AccessTools.Property(oxyChargerType, "Instance")?.SetValue(null, shipChargerInstance);
+                    CustomPatchesPlugin.Log.LogInfo("[InteriorOxygen] Restored ship OxyCharger.Instance successfully.");
                 }
             }
             catch (Exception ex)

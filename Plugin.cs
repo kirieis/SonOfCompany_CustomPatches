@@ -60,18 +60,7 @@ namespace SonOfCompany_CustomPatches
             try
             {
                 Logger.LogInfo("Applying SonOfCompany Custom Patches v1.4.0...");
-                HarmonyInstance.PatchAll(typeof(Patches.PiggyPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.LethalRpgPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.AnomaliesPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.WeatherRegistryPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.MaskedEnemySuitCopyPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.MemoryLeakFixes));
-                HarmonyInstance.PatchAll(typeof(Patches.LevelLoadingWatchdogPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.ScrapSpawningFixPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.EnemyScalingPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.CombatModeEnhancedPatches));
-                HarmonyInstance.PatchAll(typeof(Patches.InteriorOxyStationPatches));
-                HarmonyInstance.PatchAll(typeof(Items.ItemRegistryPatches));
+                HarmonyInstance.PatchAll(System.Reflection.Assembly.GetExecutingAssembly());
 
                 Patches.LethalLevelLoaderCompatPatches.ApplyPatches(HarmonyInstance);
                 Patches.LethalModDataLibFixPatches.ApplyPatches(HarmonyInstance);

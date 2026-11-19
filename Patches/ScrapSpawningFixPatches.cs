@@ -220,5 +220,45 @@ namespace SonOfCompany_CustomPatches.Patches
             public override void NextBytes(byte[] buffer)
                 => Inner.NextBytes(buffer);
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // 50% CHANCE CASINO AT COMPANY BUILDING (GORDION), RESETS PER QUOTA
+        // ─────────────────────────────────────────────────────────────────────
+        [HarmonyPatch]
+        public static class Casino50PercentChancePatch
+        {
+            private static int _lastQuotaIndex = -1;
+            private static bool _casinoEnabledForCurrentQuota = false;
+
+            [HarmonyTargetMethod]
+            private static MethodBase TargetMethod()
+            {
+                Type t = AccessTools.TypeByName("LethalCasino.Custom.CasinoManager");
+                return AccessTools.Method(t, "SpawnCasinoServerRpc");
+            }
+
+            [HarmonyPrefix]
+            private static bool Prefix()
+            {
+                int currentQuota = TimeOfDay.Instance != null ? TimeOfDay.Instance.timesFulfilledQuota : 0;
+                if (currentQuota != _lastQuotaIndex)
+                {
+                    _lastQuotaIndex = currentQuota;
+                    // Deterministic seed based on map seed and current quota count
+                    int seed = (StartOfRound.Instance != null ? StartOfRound.Instance.randomMapSeed : 12345) + currentQuota * 777;
+                    System.Random rnd = new System.Random(seed);
+                    _casinoEnabledForCurrentQuota = (rnd.Next(0, 100) < 50);
+                    CustomPatchesPlugin.Log.LogInfo($"[LethalCasino] Quota {currentQuota} - Casino appearance roll: {(_casinoEnabledForCurrentQuota ? "OPEN (50%)" : "CLOSED (50%)")}");
+                }
+
+                if (!_casinoEnabledForCurrentQuota)
+                {
+                    CustomPatchesPlugin.Log.LogInfo("[LethalCasino] Casino is closed this quota cycle (50% chance). Skipping SpawnCasinoServerRpc.");
+                    return false; // Skip spawning casino
+                }
+
+                return true; // Proceed with spawning casino
+            }
+        }
     }
 }

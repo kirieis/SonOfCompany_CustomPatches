@@ -18,6 +18,8 @@
     <Reference Include="UnityEngine.UI" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.UI.dll" />
     <Reference Include="UnityEngine.UIModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.UIModule.dll" />
     <Reference Include="Unity.TextMeshPro" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.TextMeshPro.dll" />
+    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.RenderPipelines.HighDefinition.Runtime.dll" />
+    <Reference Include="Unity.RenderPipelines.Core.Runtime" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.RenderPipelines.Core.Runtime.dll" />
     <Reference Include="Unity.Netcode.Runtime" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.Netcode.Runtime.dll" />
     <Reference Include="Unity.InputSystem" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\Unity.InputSystem.dll" />
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\Lethal Company_Data\Managed\UnityEngine.InputLegacyModule.dll" />

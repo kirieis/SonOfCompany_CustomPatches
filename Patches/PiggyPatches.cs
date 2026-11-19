@@ -43,6 +43,12 @@ namespace SonOfCompany_CustomPatches.Patches
 
     public static class PiggyPatches
     {
+        public static bool IsBrokenRevolver(GrabbableObject item)
+        {
+            if (item == null || item.itemProperties == null) return false;
+            return item.itemProperties.itemName.Equals("Broken Revolver", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static RevolverRouletteState GetRouletteState(RevolverItem revolver)
         {
             if (revolver == null) return null;
@@ -132,6 +138,7 @@ namespace SonOfCompany_CustomPatches.Patches
         private static bool RevolverItem_ItemInteractLeftRight_Prefix(RevolverItem __instance, bool right)
         {
             if (__instance == null) return true;
+            if (IsBrokenRevolver(__instance)) return false; // Broken Revolver has NO cylinder or interaction
             var state = GetRouletteState(__instance);
 
             // !right (Q pressed): Mở / Đóng cylinder
@@ -171,6 +178,11 @@ namespace SonOfCompany_CustomPatches.Patches
         private static bool RevolverItem_FindAmmoInInventory_Prefix(RevolverItem __instance, ref int __result)
         {
             if (__instance == null || __instance.playerHeldBy == null) return true;
+            if (IsBrokenRevolver(__instance))
+            {
+                __result = -1;
+                return false;
+            }
             var state = GetRouletteState(__instance);
             if (state == null) return true;
 
@@ -229,6 +241,7 @@ namespace SonOfCompany_CustomPatches.Patches
         private static bool ShootGun_Prefix(RevolverItem __instance)
         {
             if (__instance == null) return true;
+            if (IsBrokenRevolver(__instance)) return false; // Broken Revolver cannot shoot
 
             int ammo = GetAmmosLoaded(__instance);
             if (ammo <= 0 || __instance.isCylinderMoving)
@@ -297,6 +310,12 @@ namespace SonOfCompany_CustomPatches.Patches
 
             if (StartOfRound.Instance != null && __instance.playerHeldBy != StartOfRound.Instance.localPlayerController)
                 return;
+
+            if (IsBrokenRevolver(__instance))
+            {
+                // Broken Revolver has no gun controls
+                return;
+            }
 
             var state = GetRouletteState(__instance);
             if (state == null) return;
@@ -421,8 +440,11 @@ namespace SonOfCompany_CustomPatches.Patches
         // ---------------------------------------------------------
         [HarmonyPatch(typeof(RevolverItem), "ReloadGunAnimation")]
         [HarmonyPrefix]
-        private static void RevolverItem_ReloadGunAnimation_Prefix(RevolverItem __instance)
+        private static bool RevolverItem_ReloadGunAnimation_Prefix(RevolverItem __instance)
         {
+            if (__instance != null && IsBrokenRevolver(__instance))
+                return false;
+
             if (__instance != null && __instance.playerHeldBy != null)
             {
                 try
@@ -439,6 +461,7 @@ namespace SonOfCompany_CustomPatches.Patches
                 }
                 catch { }
             }
+            return true;
         }
 
         [HarmonyPatch(typeof(M4Item), "ReloadGunAnimation")]
