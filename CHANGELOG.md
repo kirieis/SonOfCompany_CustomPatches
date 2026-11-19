@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.4.0] - 2026-11-19
+### Added
+- **Execution Bullet & Execution Revolver System**:
+  - Added new special ammunition **Execution Bullet** to the Terminal Store for **$9999**.
+  - Reloading an Execution Bullet into the Revolver converts it into the **Execution Revolver**.
+  - **Instant Kill**: Any shot fired from an Execution Revolver instantly eliminates ANY monster, including immortal/unkillable entities (Passenger, Snipjack, Simon Says, Hushdoll, etc.).
+  - **Safety & Lock**: The Russian Roulette mechanic is automatically disabled while in Execution status. Only further Execution Bullets can be loaded into an Execution Revolver.
+  - **Auto-Revert**: As soon as all loaded Execution Bullets are fired/spent, the Revolver immediately reverts back to a standard Revolver, re-enabling regular ammunition and Russian Roulette.
+- **Interior Oxygen Stations**:
+  - Automatically spawns stationary oxygen refilling units inside interiors on moons with hazard level **B or higher** (B, A, S, S+).
+  - Stations are fixed in place (cannot be moved or carried).
+  - Provides **2 uses** per station, each refilling **50% of the player's oxygen tank**.
+- **Enemy & Moon Scaling**:
+  - **Spore Lizard (PufferAI)** base health buffed to **30 hits** (was 3).
+  - **Progressive Enemy Health**: All monsters gain **+1 HP** for every **3 quotas fulfilled**.
+  - **Progressive Scrap Spawning**: All moons gain **+2 min and +2 max scrap** for every **4 quotas fulfilled**.
+- **CombatMode Enhancements**:
+  - Added configurable **Toggle Mode** (`ToggleStance = true`): Pressing the stance key once activates/deactivates Combat Mode instead of requiring the player to hold it down.
+  - **LethalRPG Brawler Lv3 Synergy**: Reaching Brawler Level 3 now increases unarmed punch damage in CombatMode by **+1** per hit.
+- **Scrap Spawning & Value Bug Fixes**:
+  - **Scrap Anomaly Fix**: Permanently blocked vanilla jackpot anomaly roll (`AnomalyRandom <= 20`), preventing bugged runs where all scrap spawns as identical items (e.g., wine bottles).
+  - **Zero Scrap / Blank Scan Node Fix**: Removed vanilla 11-second coroutine delay on `SyncScrapValuesClientRpc`. Scrap value is now synchronized immediately upon spawn, preventing $0 values in the scan HUD and Performance Report.
+
+### Changed & Fixed
+- **Russian Roulette Updates**:
+  - Keybind changed from **[E]** to **[R]** to avoid accidental triggers while picking up items or interacting with objects.
+  - Removed all intrusive HUD roulette popup notification windows for a cleaner, more immersive gameplay experience.
+- **Weapon & Store Price Overhaul**:
+  - **Revolver**: Set to **$888**.
+  - **M16A Rifle**: Set to **$999**.
+  - **Double-Barreled Shotgun**: Set to **$800**.
+  - **Zappinator**: Price updated to **$650**.
+  - **Jet Wings**: Completely removed from the store.
+  - **Ammunition Store Removal & Scrap Drop Transition**:
+    - Revolver Ammo, Rifle Magazines, and Shotgun Shells can no longer be purchased in the store.
+    - Ammunition now drops organically as moon scrap:
+      - Revolver Bullet: Rarity **70**
+      - Rifle Magazine: Rarity **70**
+      - Shotgun Shell: Rarity **50**
+- **LethalRPG Rebalance**:
+  - **Marksman Upgrade**: Now applies reload speed reduction to **ALL gun-type weapons** (Shotgun, Revolver, Rifle). Updated menu description accordingly.
+  - **Skill XP Cost**: Increased required XP for all **Unique** and **Ultimate** skills by **+25 XP**.
+- **Engine & Cross-Mod Compatibility**:
+  - Fixed HarmonyX `GrabbableObject::SetScrapValue` signature mismatch error.
+  - Fixed `LethalModDataLib` NullReferenceException during game startup.
+  - Applied runtime patches for LethalLevelLoader 1.17.3+ and DawnLib/Accretion asset paths.
+
+---
+
 ## [1.3.1] - 2026-11-11
 ### Added
 - **Russian Roulette Mechanic (Piggy Revolver Exclusive)**:
