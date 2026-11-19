@@ -110,25 +110,44 @@ namespace SonOfCompany_CustomPatches.Patches
             try
             {
                 var returnType = ((MethodInfo)__originalMethod).ReturnType;
-                // Construct default valid tuple
-                // ContentStatus enum has Valid as 0
-                Array values = Enum.GetValues(returnType.GenericTypeArguments[0]);
-                object validStatus = values.GetValue(0); // Valid is typically 0
-                foreach (var v in values)
+                // If the return type is a ValueTuple<ContentStatus, string>
+                Type[] typeArgs = returnType.GenericTypeArguments;
+                if (typeArgs != null && typeArgs.Length > 0)
                 {
-                    if (v.ToString().Equals("Valid", StringComparison.OrdinalIgnoreCase))
+                    Type statusType = typeArgs[0];
+                    object validStatus = null;
+
+                    if (statusType.IsEnum)
                     {
-                        validStatus = v;
-                        break;
+                        Array values = Enum.GetValues(statusType);
+                        foreach (var v in values)
+                        {
+                            if (v.ToString().Equals("Valid", StringComparison.OrdinalIgnoreCase))
+                            {
+                                validStatus = v;
+                                break;
+                            }
+                        }
+                        if (validStatus == null && values.Length > 0)
+                        {
+                            validStatus = values.GetValue(0);
+                        }
                     }
+                    else
+                    {
+                        // Fallback if not directly an enum
+                        validStatus = Activator.CreateInstance(statusType);
+                    }
+
+                    __result = Activator.CreateInstance(returnType, validStatus, string.Empty);
+                    return false; // Skip original validation that throws on empty materials
                 }
 
-                __result = Activator.CreateInstance(returnType, validStatus, string.Empty);
-                return false; // Skip original validation that throws on empty materials
+                return true;
             }
             catch (Exception ex)
             {
-                CustomPatchesPlugin.Log.LogError("[LLL-Compat] Error in TryValidateContent_Prefix: " + ex);
+                CustomPatchesPlugin.Log.LogWarning("[LLL-Compat] Non-fatal in TryValidateContent_Prefix: " + ex.Message);
                 return true;
             }
         }
