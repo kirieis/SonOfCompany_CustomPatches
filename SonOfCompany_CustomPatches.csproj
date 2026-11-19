@@ -34,6 +34,7 @@
     <Reference Include="BetterStamina" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\FlipMods-BetterStamina\BetterStamina.dll" />
     <Reference Include="SellBodies" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Entity378-SellBodiesFixed\SellBodies\SellBodies.dll" />
     <Reference Include="WeatherRegistry" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\mrov-WeatherRegistry\WeatherRegistry.dll" />
+    <Reference Include="Oxygen" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\consequential-Oxygen\Oxygen.dll" />
 
     <Reference Include="EyeMonster" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\EyeMonster.dll" />
     <Reference Include="SimonSays" HintPath="F:\Games\Lethal.Company.v81_ - Copy (2)\BepInEx\plugins\Y4NGZ313-Anomalies\SimonSays.dll" />

@@ -14,11 +14,13 @@ namespace SonOfCompany_CustomPatches
     [BepInDependency("FlipMods.BetterStamina", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("Entity378.SellBodiesFixed", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("Borgez.CombatMode", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("consequential.Oxygen", BepInDependency.DependencyFlags.SoftDependency)]
     public class CustomPatchesPlugin : BaseUnityPlugin
     {
         public const string ModGUID = "com.sonofcompany.custompatches";
         public const string ModName = "SonOfCompany Custom Patches";
-        public const string ModVersion = "1.3.2";
+        public const string ModVersion = "1.4.0";
 
         public static CustomPatchesPlugin Instance { get; private set; }
         public static ManualLogSource Log => Instance.Logger;
@@ -50,18 +52,29 @@ namespace SonOfCompany_CustomPatches
 
             AggressiveMemoryCleanup = Config.Bind("Performance", "AggressiveMemoryCleanup", true, "Automatically garbage-collect and unload unused assets between moons and days to stop memory leaks.");
 
+            // Initialize CombatMode Toggle Config
+            Patches.CombatModeEnhancedPatches.InitConfig(Config);
+
             HarmonyInstance = new Harmony(ModGUID);
 
             try
             {
-                Logger.LogInfo("Applying SonOfCompany Custom Patches v1.3.2...");
+                Logger.LogInfo("Applying SonOfCompany Custom Patches v1.4.0...");
                 HarmonyInstance.PatchAll(typeof(Patches.PiggyPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.LethalRpgPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.AnomaliesPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.WeatherRegistryPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.MaskedEnemySuitCopyPatches));
                 HarmonyInstance.PatchAll(typeof(Patches.MemoryLeakFixes));
+                HarmonyInstance.PatchAll(typeof(Patches.LevelLoadingWatchdogPatches));
+                HarmonyInstance.PatchAll(typeof(Patches.ScrapSpawningFixPatches));
+                HarmonyInstance.PatchAll(typeof(Patches.EnemyScalingPatches));
+                HarmonyInstance.PatchAll(typeof(Patches.CombatModeEnhancedPatches));
+                HarmonyInstance.PatchAll(typeof(Patches.InteriorOxyStationPatches));
                 HarmonyInstance.PatchAll(typeof(Items.ItemRegistryPatches));
+
+                Patches.LethalLevelLoaderCompatPatches.ApplyPatches(HarmonyInstance);
+                Patches.LethalModDataLibFixPatches.ApplyPatches(HarmonyInstance);
 
                 Logger.LogInfo("All SonOfCompany Custom Patches applied successfully!");
 

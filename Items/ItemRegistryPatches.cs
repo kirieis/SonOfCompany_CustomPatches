@@ -12,8 +12,9 @@ namespace SonOfCompany_CustomPatches.Items
         public static Item SpeedloaderItemRef { get; private set; }
         public static Item AmmoBoxItemRef { get; private set; }
         public static Item TacticalBeltItemRef { get; private set; }
-        public static Item MagazineItemRef { get; private set; }
         public static Item RifleItemRef { get; private set; }
+        public static Item ExecutionBulletItemRef { get; private set; }
+        public static Item ShotgunShellItemRef { get; private set; }
 
         private static bool _registered = false;
 
@@ -69,53 +70,122 @@ namespace SonOfCompany_CustomPatches.Items
                 return false;
             });
 
-            // --- 3. Đặt giá Magazine = 60$ ---
-            foreach (var it in buyables)
+            // --- 3. Tìm Revolver Ammo để tạo Execution Bullet ($9999) trước khi xóa đạn thường khỏi store ---
+            Item baseRevAmmo = buyables.Find(it => it != null && it.itemName.ToLower().Contains("revolver") && it.itemName.ToLower().Contains("ammo"));
+            if (baseRevAmmo == null)
             {
-                if (it == null) continue;
-                string lower = it.itemName.ToLower();
-                if (lower.Contains("magazine") || lower.Contains("mag"))
+                Item[] allItems = Resources.FindObjectsOfTypeAll<Item>();
+                baseRevAmmo = Array.Find(allItems, it => it != null && it.itemName != null && it.itemName.ToLower().Contains("revolver") && it.itemName.ToLower().Contains("ammo"));
+            }
+
+            if (baseRevAmmo != null && ExecutionBulletItemRef == null)
+            {
+                try
                 {
-                    it.creditsWorth = 60;
-                    MagazineItemRef = it;
-                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $60.");
+                    Item execBullet = ScriptableObject.Instantiate(baseRevAmmo);
+                    execBullet.name = "ExecutionBulletItem";
+                    execBullet.itemName = "Execution Bullet";
+                    execBullet.creditsWorth = 9999;
+
+                    if (execBullet.spawnPrefab != null)
+                    {
+                        execBullet.spawnPrefab = UnityEngine.Object.Instantiate(execBullet.spawnPrefab);
+                        execBullet.spawnPrefab.name = "ExecutionBullet";
+                        if (execBullet.spawnPrefab.GetComponent<ExecutionBulletTag>() == null)
+                        {
+                            execBullet.spawnPrefab.AddComponent<ExecutionBulletTag>();
+                        }
+                    }
+
+                    ExecutionBulletItemRef = execBullet;
+                    buyables.Add(execBullet);
+                    CustomPatchesPlugin.Log.LogInfo("[ItemRegistry] Created & registered Execution Bullet in store for $9999!");
+                }
+                catch (Exception ex)
+                {
+                    CustomPatchesPlugin.Log.LogError($"[ItemRegistry] Failed to create Execution Bullet item: {ex}");
                 }
             }
 
-            // --- 4. Giá các loại súng (+40$, Pistol = $125) ---
+            // Tìm Shell Item để đảm bảo drop dưới dạng scrap sau này
+            foreach (var it in buyables)
+            {
+                if (it != null && (it.itemName.Equals("Shell", StringComparison.OrdinalIgnoreCase) || it.itemName.ToLower().Contains("shotgun shell")))
+                {
+                    ShotgunShellItemRef = it;
+                    break;
+                }
+            }
+            if (ShotgunShellItemRef == null)
+            {
+                Item[] allItems = Resources.FindObjectsOfTypeAll<Item>();
+                ShotgunShellItemRef = Array.Find(allItems, it => it != null && it.itemName != null && (it.itemName.Equals("Shell", StringComparison.OrdinalIgnoreCase) || it.itemName.ToLower().Contains("shotgun shell")));
+            }
+
+            // --- 4. Xóa Revolver bullet, Magazine, Shell, Jet Wings khỏi store ---
+            int removedAmmoAndWings = buyables.RemoveAll(it =>
+            {
+                if (it == null) return false;
+                string lower = it.itemName.ToLower().Trim();
+
+                // Đạn thường của Revolver
+                if (lower.Contains("revolver") && lower.Contains("ammo"))
+                    return true;
+                if (lower.Equals("revolver bullet", StringComparison.OrdinalIgnoreCase) || lower.Equals("bullet", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                // Magazine của Rifle
+                if (lower.Contains("magazine") || lower.Contains("mag"))
+                    return true;
+
+                // Shell của Shotgun
+                if (lower.Equals("shell") || lower.Contains("shotgun shell"))
+                    return true;
+
+                // Jet Wings
+                if (lower.Contains("jet wings") || lower.Contains("jet wing") || lower.Equals("jet wings"))
+                    return true;
+
+                return false;
+            });
+            CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Removed {removedAmmoAndWings} items from store (Revolver bullet, Magazine, Shell, Jet Wings).");
+
+            // --- 5. Đặt giá vũ khí: Revolver = $888, Rifle = $999, Double-barreled shotgun = $800, Zappinator = $650 ---
             foreach (var it in buyables)
             {
                 if (it == null) continue;
                 string lower = it.itemName.ToLower().Trim();
 
-                if (lower == "pistol" || lower.Contains("x18"))
+                if (lower == "revolver")
+                {
+                    it.creditsWorth = 888;
+                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set Revolver price to $888.");
+                }
+                else if (lower.Contains("double-barreled shotgun") || (lower.Contains("shotgun") && !lower.Contains("heavy")))
+                {
+                    it.creditsWorth = 800;
+                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $800.");
+                }
+                else if (lower.Contains("zappinator") || lower.Contains("zap gun") || lower == "zappinator")
+                {
+                    it.creditsWorth = 650;
+                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $650.");
+                }
+                else if (lower == "pistol" || lower.Contains("x18"))
                 {
                     it.creditsWorth = 125;
-                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $125.");
                 }
                 else if (lower.Contains("bolt") || lower.Contains("kar98"))
                 {
                     it.creditsWorth = 205;
-                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $205.");
                 }
                 else if (lower.Contains("heavy shotgun"))
                 {
                     it.creditsWorth = 150;
-                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $150.");
-                }
-                else if (lower.Contains("double-barreled shotgun") || (lower.Contains("shotgun") && !lower.Contains("heavy")))
-                {
-                    it.creditsWorth = 706;
-                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $706.");
-                }
-                else if (lower == "revolver")
-                {
-                    it.creditsWorth = 120; // 80 + 40
-                    CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set '{it.itemName}' price to $120.");
                 }
             }
 
-            // --- 5. Đảm bảo Piggy Rifle (M4) có trong store: Đổi tên thành "M16A Rifle", giá 240$ ---
+            // --- 6. Đảm bảo Piggy Rifle (M4) có trong store: Đổi tên thành "M16A Rifle", giá $999 ---
             Item rifleItem = buyables.Find(it =>
                 it != null && (
                     it.itemName.Equals("M16A Rifle", StringComparison.OrdinalIgnoreCase) ||
@@ -166,14 +236,14 @@ namespace SonOfCompany_CustomPatches.Items
             if (rifleItem != null)
             {
                 rifleItem.itemName = "M16A Rifle";
-                rifleItem.creditsWorth = 240; // 200 + 40
+                rifleItem.creditsWorth = 999; // $999
                 RifleItemRef = rifleItem;
-                CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set Rifle item name to 'M16A Rifle' and price to $240.");
+                CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Set Rifle item name to 'M16A Rifle' and price to $999.");
             }
 
             terminal.buyableItemsList = buyables.ToArray();
 
-            // --- 6. Đồng bộ toàn bộ Buy Nouns & Indices ---
+            // --- 7. Đồng bộ toàn bộ Buy Nouns & Indices ---
             SyncTerminalBuyNodes(terminal);
 
             CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Store patched successfully: {originalCount} → {buyables.Count} items.");
@@ -190,7 +260,7 @@ namespace SonOfCompany_CustomPatches.Items
 
             // Tìm index của M16A Rifle trong buyableItemsList
             int m16Index = -1;
-            int m16Cost = 240;
+            int m16Cost = 999;
             for (int i = 0; i < terminal.buyableItemsList.Length; i++)
             {
                 var it = terminal.buyableItemsList[i];
@@ -198,6 +268,20 @@ namespace SonOfCompany_CustomPatches.Items
                 {
                     m16Index = i;
                     m16Cost = it.creditsWorth;
+                    break;
+                }
+            }
+
+            // Tìm index của Execution Bullet trong buyableItemsList
+            int execIndex = -1;
+            int execCost = 9999;
+            for (int i = 0; i < terminal.buyableItemsList.Length; i++)
+            {
+                var it = terminal.buyableItemsList[i];
+                if (it != null && it.itemName.Equals("Execution Bullet", StringComparison.OrdinalIgnoreCase))
+                {
+                    execIndex = i;
+                    execCost = it.creditsWorth;
                     break;
                 }
             }
@@ -224,19 +308,13 @@ namespace SonOfCompany_CustomPatches.Items
                         if (item == null) continue;
                         string itemName = item.itemName.ToLower().Trim();
 
-                        if (word == "pistol" && (itemName == "pistol" || itemName.Contains("x18")))
+                        if (word == "revolver" && itemName == "revolver")
                         {
                             cn.result.buyItemIndex = i;
                             cn.result.itemCost = item.creditsWorth;
                             break;
                         }
-                        else if (word == "revolver" && itemName == "revolver")
-                        {
-                            cn.result.buyItemIndex = i;
-                            cn.result.itemCost = item.creditsWorth;
-                            break;
-                        }
-                        else if (word == "magazine" && (itemName.Contains("magazine") || itemName.Contains("mag")))
+                        else if (word.Contains("zappinator") && itemName.Contains("zappinator"))
                         {
                             cn.result.buyItemIndex = i;
                             cn.result.itemCost = item.creditsWorth;
@@ -278,12 +356,88 @@ namespace SonOfCompany_CustomPatches.Items
                 }
             }
 
+            // Đảm bảo có noun cho Execution Bullet
+            if (execIndex >= 0)
+            {
+                CompatibleNoun templateCn = nounsList.Find(n => n?.result != null && n.result.buyItemIndex >= 0);
+                if (templateCn != null && templateCn.result != null)
+                {
+                    string[] aliases = new string[] { "execution", "execution bullet" };
+                    foreach (var alias in aliases)
+                    {
+                        if (!nounsList.Exists(n => n?.noun?.word == alias))
+                        {
+                            TerminalKeyword newNoun = ScriptableObject.CreateInstance<TerminalKeyword>();
+                            newNoun.word = alias;
+                            newNoun.isVerb = false;
+
+                            TerminalNode resultCopy = ScriptableObject.Instantiate(templateCn.result);
+                            resultCopy.buyItemIndex = execIndex;
+                            resultCopy.itemCost = execCost;
+                            resultCopy.displayText = $"\nYou have requested to order Execution Bullet.\nTotal cost: ${execCost}.\n\nPlease CONFIRM or DENY.\n\n";
+
+                            CompatibleNoun newCn = new CompatibleNoun(newNoun, resultCopy);
+                            nounsList.Add(newCn);
+                        }
+                    }
+                }
+            }
+
             buyKeyword.compatibleNouns = nounsList.ToArray();
             CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Synchronized all Terminal buy noun indices and costs.");
         }
 
         // ---------------------------------------------------------
-        // 7. FIX LỖI GIÁ 2880: CHẶN REGEX \d+ NHẬN SỐ "16" TRONG "M16" LÀ SỐ LƯỢNG MUA
+        // INJECT SCRAP RARITY (SHELL = 50) INTO MOONS
+        // ---------------------------------------------------------
+        [HarmonyPatch(typeof(RoundManager), "SpawnScrapInLevel")]
+        [HarmonyPrefix]
+        private static void SpawnScrapInLevel_InjectAmmoScrapRarities(RoundManager __instance)
+        {
+            if (__instance == null || __instance.currentLevel == null) return;
+            try
+            {
+                var scrapList = __instance.currentLevel.spawnableScrap;
+                if (scrapList == null) return;
+
+                // 1. Đảm bảo Shell có trong danh sách scrap với rarity = 50
+                if (ShotgunShellItemRef != null)
+                {
+                    var existing = scrapList.Find(s => s != null && s.spawnableItem != null && (s.spawnableItem == ShotgunShellItemRef || s.spawnableItem.itemName.Equals("Shell", StringComparison.OrdinalIgnoreCase)));
+                    if (existing != null)
+                    {
+                        existing.rarity = 50;
+                    }
+                    else
+                    {
+                        scrapList.Add(new SpawnableItemWithRarity(ShotgunShellItemRef, 50));
+                        CustomPatchesPlugin.Log.LogInfo($"[ItemRegistry] Injected Shell into {__instance.currentLevel.PlanetName} scrap pool with rarity 50.");
+                    }
+                }
+
+                // 2. Đảm bảo Revolver Ammo & Rifle Mag có rarity = 70
+                foreach (var s in scrapList)
+                {
+                    if (s == null || s.spawnableItem == null || string.IsNullOrEmpty(s.spawnableItem.itemName)) continue;
+                    string n = s.spawnableItem.itemName.ToLower();
+                    if (n.Contains("revolver") && n.Contains("ammo"))
+                    {
+                        s.rarity = 70;
+                    }
+                    else if (n.Contains("magazine") || n.Contains("mag"))
+                    {
+                        s.rarity = 70;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                CustomPatchesPlugin.Log.LogWarning($"[ItemRegistry] Error injecting ammo scrap rarities: {ex}");
+            }
+        }
+
+        // ---------------------------------------------------------
+        // FIX LỖI GIÁ 2880: CHẶN REGEX \d+ NHẬN SỐ "16" TRONG "M16" LÀ SỐ LƯỢNG MUA
         // ---------------------------------------------------------
         [HarmonyPatch(typeof(Terminal), "ParsePlayerSentence")]
         [HarmonyPostfix]
@@ -303,7 +457,6 @@ namespace SonOfCompany_CustomPatches.Items
             // Nếu câu lệnh nhập vào chứa m16, m16a, m16a4
             if (lower.Contains("m16"))
             {
-                // Loại bỏ từ khóa định danh vũ khí
                 string sanitized = Regex.Replace(lower, @"\bm16a4\b|\bm16a\b|\bm16\b|\brifle\b|\bbuy\b", "", RegexOptions.IgnoreCase).Trim();
                 Match match = Regex.Match(sanitized, @"\d+");
                 if (match.Success && int.TryParse(match.Value, out int count) && count > 0)
@@ -312,11 +465,9 @@ namespace SonOfCompany_CustomPatches.Items
                 }
                 else
                 {
-                    // Người chơi chỉ gõ tên vũ khí ("m16", "m16a", "m16a4", v.v.) mà KHÔNG gõ số lượng riêng -> Số lượng mua bắt buộc là 1!
                     __instance.playerDefinedAmount = 1;
                 }
 
-                // Nếu Terminal đã xử lý ra node xác nhận mua, tính lại giá tiền hiển thị đúng theo số lượng thực
                 if (__result != null && __result.itemCost > 0)
                 {
                     int totalCost = __result.itemCost * __instance.playerDefinedAmount;

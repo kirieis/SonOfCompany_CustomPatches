@@ -21,11 +21,6 @@ namespace SonOfCompany_CustomPatches.Patches
 
             float i0 = CustomPatchesPlugin.StrengthInitialStep?.Value ?? 1.0f;
             // Strength(L) = 5 + L * i0 + L * (L - 1)
-            // L=1: 5 + 1*1 + 0 = 6
-            // L=2: 5 + 2*1 + 2 = 9
-            // L=3: 5 + 3*1 + 6 = 14
-            // L=4: 5 + 4*1 + 12 = 21
-            // L=5: 5 + 5*1 + 20 = 30
             float capacity = baseL0 + (level * i0) + (level * (level - 1));
             return (float)Math.Round(capacity, 2);
         }
@@ -55,12 +50,10 @@ namespace SonOfCompany_CustomPatches.Patches
 
             if (totalWeightLb <= strengthCapacityLb)
             {
-                // Nếu total weight <= Strength: không nhận bất kỳ weight penalty nào!
                 __result = 1.0f;
                 return false;
             }
 
-            // Nếu total weight > Strength: chỉ phần vượt Strength mới chịu vanilla penalty
             float excessLb = totalWeightLb - strengthCapacityLb;
             __result = 1.0f + (excessLb / 105f);
             return false;
@@ -80,32 +73,85 @@ namespace SonOfCompany_CustomPatches.Patches
         }
 
         // ---------------------------------------------------------
-        // 4.4 UI LETHALRPG - HIỂN THỊ CƠ CHẾ STRENGTH MỚI TRONG MENU [J]
+        // 4.4 UI LETHALRPG - STRENGTH & MARKSMAN & UNIQUE/ULTIMATE XP
         // ---------------------------------------------------------
-        public static void ApplyStrengthUi()
+        private static bool _xpAdjusted = false;
+
+        public static void ApplySkillsUi()
         {
             try
             {
-                var def = Upgrades.Get(UpgradeType.Strength);
-                if (def != null)
+                // Strength UI
+                var strDef = Upgrades.Get(UpgradeType.Strength);
+                if (strDef != null)
                 {
-                    def.Description = "Carry weight up to Strength threshold has zero movement penalty.";
-                    def.FormatTotal = (float effect, int level) =>
+                    strDef.Description = "Carry weight up to Strength threshold has zero movement penalty.";
+                    strDef.FormatTotal = (float effect, int level) =>
                     {
                         float cap = CalculateStrengthCapacity(level);
                         return $"{cap:0.##} lb weight";
                     };
-                    def.Params = Array.Empty<SkillParam>();
+                    strDef.Params = Array.Empty<SkillParam>();
+                }
+
+                // Marksman UI: Áp dụng lên mọi items thuộc dạng gun
+                var marksmanDef = Upgrades.Get(UpgradeType.Marksman);
+                if (marksmanDef != null)
+                {
+                    marksmanDef.Description = "Reload all guns faster (Shotgun, Revolver, Rifle).";
+                }
+
+                // Unique / Ultimate XP requirement += 25
+                if (!_xpAdjusted && Upgrades.All != null)
+                {
+                    _xpAdjusted = true;
+                    foreach (var def in Upgrades.All)
+                    {
+                        if (def != null && (def.Category == UpgradeCategory.Unique || def.Category == UpgradeCategory.Ultimate))
+                        {
+                            def.DefaultXpPrice += 25;
+                        }
+                    }
+                    CustomPatchesPlugin.Log.LogInfo("[LethalRPG] Applied +25 XP requirement to all Unique and Ultimate skills.");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                CustomPatchesPlugin.Log.LogWarning($"[LethalRPG] Error updating skills UI: {ex}");
+            }
+        }
+
+        // Patch RpgSettings.XpPrice to guarantee +25 XP in all menu, sorting, and buy calculations
+        [HarmonyPatch]
+        public static class RpgSettings_XpPrice_Patch
+        {
+            [HarmonyTargetMethod]
+            private static MethodBase TargetMethod()
+            {
+                Type t = AccessTools.TypeByName("LethalRPG.RpgSettings");
+                return AccessTools.Method(t, "XpPrice", new Type[] { typeof(UpgradeType) });
+            }
+
+            [HarmonyPostfix]
+            private static void Postfix(UpgradeType type, ref int __result)
+            {
+                try
+                {
+                    var def = Upgrades.Get(type);
+                    if (def != null && (def.Category == UpgradeCategory.Unique || def.Category == UpgradeCategory.Ultimate))
+                    {
+                        __result += 25;
+                    }
+                }
+                catch { }
+            }
         }
 
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
         [HarmonyPostfix]
         private static void StartOfRound_Awake_Postfix()
         {
-            ApplyStrengthUi();
+            ApplySkillsUi();
         }
 
         [HarmonyPatch]
@@ -148,7 +194,7 @@ namespace SonOfCompany_CustomPatches.Patches
             [HarmonyPrefix]
             private static void Prefix()
             {
-                ApplyStrengthUi();
+                ApplySkillsUi();
             }
         }
 

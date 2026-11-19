@@ -4,12 +4,13 @@ using GameNetcodeStuff;
 using HarmonyLib;
 using PiggyVarietyMod;
 using PiggyVarietyMod.Patches;
+using SonOfCompany_CustomPatches.Items;
 using UnityEngine;
 
 namespace SonOfCompany_CustomPatches.Patches
 {
     // ---------------------------------------------------------
-    // RUSSIAN ROULETTE STATE COMPONENT - PER REVOLVER INSTANCE
+    // RUSSIAN ROULETTE & EXECUTION STATE - PER REVOLVER INSTANCE
     // ---------------------------------------------------------
     public class RevolverRouletteState : MonoBehaviour
     {
@@ -18,6 +19,10 @@ namespace SonOfCompany_CustomPatches.Patches
         public int bulletChamberIndex = 0;   // Vị trí viên đạn duy nhất (0..5)
         public int currentChamberIndex = 0;  // Vị trí búa đập hiện tại (0..5)
         public bool wasCylinderOpen = false;
+
+        // Execution Revolver State
+        public bool isExecutionMode = false;
+        public int executionBulletsCount = 0;
 
         public void ResetRoulette()
         {
@@ -47,6 +52,19 @@ namespace SonOfCompany_CustomPatches.Patches
                 state = revolver.gameObject.AddComponent<RevolverRouletteState>();
             }
             return state;
+        }
+
+        public static bool IsExecutionBullet(GrabbableObject item)
+        {
+            if (item == null) return false;
+            if (item.itemProperties != null && !string.IsNullOrEmpty(item.itemProperties.itemName))
+            {
+                if (item.itemProperties.itemName.Equals("Execution Bullet", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            if (item.GetComponent<ExecutionBulletTag>() != null)
+                return true;
+            return false;
         }
 
         // Helper: get ammosLoaded field via reflection
@@ -106,7 +124,8 @@ namespace SonOfCompany_CustomPatches.Patches
         }
 
         // ---------------------------------------------------------
-        // 1. RUSSIAN ROULETTE - NATIVE [E] / [Q] INTERACTION HOOK
+        // 1. REVOLVER [E] / [Q] INTERACTION HOOK
+        // Roulette trigger moved from [E] to [R]!
         // ---------------------------------------------------------
         [HarmonyPatch(typeof(RevolverItem), "ItemInteractLeftRight")]
         [HarmonyPrefix]
@@ -122,7 +141,7 @@ namespace SonOfCompany_CustomPatches.Patches
                 {
                     state.ResetRoulette();
                 }
-                return true; // Cho phép mở cylinder bình thường
+                return true; // Cho phép mở/đóng cylinder bình thường
             }
 
             // right == true (E pressed):
@@ -132,36 +151,78 @@ namespace SonOfCompany_CustomPatches.Patches
                 isCylinderOpen = __instance.gunAnimator.GetBool("Reloading");
             }
 
-            // KHI CYLINDER ĐANG ĐÓNG: Nhấn E để quay buồng đạn (Russian Roulette)
+            // KHI CYLINDER ĐANG ĐÓNG: Không reload (và roulette chuyển sang phím R)
             if (!isCylinderOpen && !__instance.isCylinderMoving)
             {
-                int ammo = GetAmmosLoaded(__instance);
-                if (ammo == 1)
-                {
-                    if (state != null && !state.hasSpunThisCycle)
-                    {
-                        state.SpinRoulette();
-                        RouletteAudioManager.PlaySpin(__instance.gunAudio);
-
-                        if (HUDManager.Instance != null)
-                        {
-                            HUDManager.Instance.DisplayTip("Russian Roulette", "Cylinder spun! One bullet loaded.", false, false, "LC_Tip1");
-                        }
-                        CustomPatchesPlugin.Log.LogInfo($"[Roulette] Cylinder spun on E! Single bullet randomized to chamber {state.bulletChamberIndex}.");
-                        return false; // Đã kích hoạt Roulette thành công
-                    }
-                }
-
-                // Nếu cylinder đang đóng thì không reload
                 return false;
             }
 
-            // KHI CYLINDER ĐANG MỞ: Cho phép reload đạn bình thường
+            // KHI CYLINDER ĐANG MỞ: Cho phép reload đạn
             return true;
         }
 
         // ---------------------------------------------------------
-        // RUSSIAN ROULETTE - SHOOT GUN (BANG HOẶC DRY FIRE CLICK)
+        // EXECUTION BULLET RELOAD FILTER
+        // Khi Revolver đang ở status Execution Revolver:
+        // CHỈ cho phép reload = Execution Bullet chứ không phải đạn thường!
+        // ---------------------------------------------------------
+        [HarmonyPatch(typeof(RevolverItem), "FindAmmoInInventory")]
+        [HarmonyPrefix]
+        private static bool RevolverItem_FindAmmoInInventory_Prefix(RevolverItem __instance, ref int __result)
+        {
+            if (__instance == null || __instance.playerHeldBy == null) return true;
+            var state = GetRouletteState(__instance);
+            if (state == null) return true;
+
+            var slots = __instance.playerHeldBy.ItemSlots;
+            if (slots == null) return true;
+
+            if (state.isExecutionMode)
+            {
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    var item = slots[i];
+                    if (item != null && IsExecutionBullet(item))
+                    {
+                        __result = i;
+                        return false; // Tìm thấy Execution Bullet trong túi
+                    }
+                }
+
+                // Đang trong mode Execution Revolver nhưng không có Execution Bullet -> Chặn reload!
+                __result = -1;
+                return false;
+            }
+
+            return true; // Chế độ thường: tìm ammo bình thường hoặc execution bullet
+        }
+
+        [HarmonyPatch(typeof(RevolverItem), "ReloadedGun")]
+        [HarmonyPostfix]
+        private static void RevolverItem_ReloadedGun_Postfix(RevolverItem __instance, bool __result)
+        {
+            if (!__result || __instance == null || __instance.playerHeldBy == null) return;
+            var state = GetRouletteState(__instance);
+            if (state == null) return;
+
+            FieldInfo slotField = AccessTools.Field(typeof(RevolverItem), "ammoSlotToUse");
+            int slot = slotField != null ? (int)slotField.GetValue(__instance) : -1;
+
+            if (slot >= 0 && slot < __instance.playerHeldBy.ItemSlots.Length)
+            {
+                var ammoItem = __instance.playerHeldBy.ItemSlots[slot];
+                if (IsExecutionBullet(ammoItem))
+                {
+                    state.isExecutionMode = true;
+                    state.executionBulletsCount++;
+                    state.ResetRoulette(); // Không áp dụng Roulette khi đang ở status Execution Revolver
+                    CustomPatchesPlugin.Log.LogInfo($"[Execution Revolver] Loaded Execution Bullet! Total loaded: {state.executionBulletsCount}. Status changed to Execution Revolver.");
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // RUSSIAN ROULETTE & EXECUTION REVOLVER SHOOTING
         // ---------------------------------------------------------
         [HarmonyPatch(typeof(RevolverItem), "ShootGun")]
         [HarmonyPrefix]
@@ -174,22 +235,39 @@ namespace SonOfCompany_CustomPatches.Patches
                 return true;
 
             var state = GetRouletteState(__instance);
-            if (state != null && state.isRouletteActive)
+            if (state == null) return true;
+
+            // KHI LÀ EXECUTION REVOLVER: Bỏ qua hoàn toàn Roulette, bắn luôn!
+            if (state.isExecutionMode)
+            {
+                state.executionBulletsCount--;
+                CustomPatchesPlugin.Log.LogInfo($"[Execution Revolver] Fired Execution Bullet! Remaining in gun: {state.executionBulletsCount}.");
+
+                if (state.executionBulletsCount <= 0 || ammo <= 1)
+                {
+                    state.isExecutionMode = false;
+                    state.executionBulletsCount = 0;
+                    CustomPatchesPlugin.Log.LogInfo("[Execution Revolver] No Execution Bullets remaining in gun. Reverted to normal Revolver.");
+                }
+                return true;
+            }
+
+            // KHI LÀ ROULETTE BÌNH THƯỜNG:
+            if (state.isRouletteActive)
             {
                 if (state.currentChamberIndex == state.bulletChamberIndex)
                 {
                     // BANG! Trúng viên đạn!
                     CustomPatchesPlugin.Log.LogInfo($"[Roulette] BANG! Chamber {state.currentChamberIndex} hit bullet! Firing.");
                     state.isRouletteActive = false;
-                    return true; // Cho phép bắn
+                    return true;
                 }
                 else
                 {
-                    // CLICK! Buồng đạn rỗng!
+                    // CLICK! Buồng đạn rỗng (không popup thông báo)
                     CustomPatchesPlugin.Log.LogInfo($"[Roulette] CLICK! Chamber {state.currentChamberIndex} was empty. Advancing chamber.");
                     state.currentChamberIndex = (state.currentChamberIndex + 1) % 6;
 
-                    // Âm thanh búa đập buồng đạn rỗng
                     AudioClip drySFX = AccessTools.Field(typeof(RevolverItem), "revolverDryFire")?.GetValue(__instance) as AudioClip
                                     ?? AccessTools.Field(typeof(RevolverItem), "noAmmoSFX")?.GetValue(__instance) as AudioClip;
                     if (__instance.gunAudio != null)
@@ -200,11 +278,6 @@ namespace SonOfCompany_CustomPatches.Patches
                             __instance.gunAudio.Play();
                     }
 
-                    if (HUDManager.Instance != null)
-                    {
-                        HUDManager.Instance.DisplayTip("Russian Roulette", "*Click* ... Empty chamber.", false, false, "LC_Tip1");
-                    }
-
                     return false; // Bỏ qua bắn: không tốn đạn, không tạo lửa, không gây sát thương
                 }
             }
@@ -213,7 +286,7 @@ namespace SonOfCompany_CustomPatches.Patches
         }
 
         // ---------------------------------------------------------
-        // REVOLVER UPDATE - SPEEDLOADER & CYLINDER STATE TRACKING
+        // REVOLVER UPDATE - ROULETTE [R] KEY & SPEEDLOADER & TOOLTIPS
         // ---------------------------------------------------------
         [HarmonyPatch(typeof(RevolverItem), "Update")]
         [HarmonyPostfix]
@@ -248,8 +321,28 @@ namespace SonOfCompany_CustomPatches.Patches
 
             int ammo = GetAmmosLoaded(__instance);
 
+            // KHI CYLINDER ĐANG ĐÓNG: Nhấn [R] để kích hoạt Russian Roulette
+            if (!isCylinderOpen && !__instance.isCylinderMoving)
+            {
+                if (!state.isExecutionMode && ammo == 1 && !state.hasSpunThisCycle)
+                {
+                    if (UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.R))
+                    {
+                        state.SpinRoulette();
+                        RouletteAudioManager.PlaySpin(__instance.gunAudio);
+                        CustomPatchesPlugin.Log.LogInfo($"[Roulette] Cylinder spun on R key! Single bullet randomized to chamber {state.bulletChamberIndex}. (No tip displayed)");
+                    }
+                }
+            }
+
+            // Cập nhật tooltip cho Execution Revolver
+            if (state.isExecutionMode && HUDManager.Instance != null && HUDManager.Instance.controlTipLines != null)
+            {
+                HUDManager.Instance.ChangeControlTip(0, $"Shoot : [LMB] [Execution Revolver: {state.executionBulletsCount}]");
+            }
+
             // KHI CYLINDER MỞ: Speedloader prompt khi hết đạn
-            if (isCylinderOpen && ammo <= 0)
+            if (isCylinderOpen && ammo <= 0 && !state.isExecutionMode)
             {
                 bool hasSpeedloader = Items.SpeedloaderItem.PlayerHasSpeedloader(__instance.playerHeldBy);
 
@@ -271,17 +364,6 @@ namespace SonOfCompany_CustomPatches.Patches
                             {
                                 __instance.gunAudio.PlayOneShot(__instance.gunReloadSFX);
                             }
-                            if (HUDManager.Instance != null)
-                            {
-                                HUDManager.Instance.DisplayTip("Speedloader", "Reloaded 6 bullets into Revolver!", false, false, "LC_Tip1");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (HUDManager.Instance != null)
-                        {
-                            HUDManager.Instance.DisplayTip("No Speedloader", "You need a Speedloader in your inventory!", true, false, "LC_Tip1");
                         }
                     }
                 }
@@ -303,7 +385,7 @@ namespace SonOfCompany_CustomPatches.Patches
             string reloadKey = GetRifleReloadKeyDisplay();
             HUDManager.Instance?.ChangeControlTip(2, $"Reload : [{reloadKey}]");
 
-            return false; // Thay thế hoàn toàn logic gốc để không bao giờ hiện [<30], [<20], [<10]
+            return false;
         }
 
         [HarmonyPatch(typeof(M4Item), "KR_SetAmmoControlTip")]
@@ -321,10 +403,68 @@ namespace SonOfCompany_CustomPatches.Patches
             return false;
         }
 
+        public static float GetMarksmanFactor(PlayerControllerB player)
+        {
+            if (player == null) return 1.0f;
+            try
+            {
+                int level = LethalRPG.RpgState.Level(player, LethalRPG.UpgradeType.Marksman);
+                if (level <= 0) return 1.0f;
+                float reduction = Mathf.Min(0.7f, level * 0.15f);
+                return 1.0f - reduction;
+            }
+            catch { return 1.0f; }
+        }
+
         // ---------------------------------------------------------
-        // 3. DAMAGE REBALANCING
-        // Revolver: Monster = 4.25 (Flat), Player = 90 (Flat)
-        // Rifle:    Monster = 1.25 (Flat), Player = 30 (Flat)
+        // 3. MARKSMAN UPGRADE APPLIED TO REVOLVER & M4
+        // ---------------------------------------------------------
+        [HarmonyPatch(typeof(RevolverItem), "ReloadGunAnimation")]
+        [HarmonyPrefix]
+        private static void RevolverItem_ReloadGunAnimation_Prefix(RevolverItem __instance)
+        {
+            if (__instance != null && __instance.playerHeldBy != null)
+            {
+                try
+                {
+                    float factor = GetMarksmanFactor(__instance.playerHeldBy);
+                    if (factor > 0.05f && factor < 0.999f)
+                    {
+                        PiggyVarietyMod.Plugin.revolverReloadSpeed = 1.0f / factor;
+                    }
+                    else
+                    {
+                        PiggyVarietyMod.Plugin.revolverReloadSpeed = 1.0f;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        [HarmonyPatch(typeof(M4Item), "ReloadGunAnimation")]
+        [HarmonyPrefix]
+        private static void M4Item_ReloadGunAnimation_Prefix(M4Item __instance)
+        {
+            if (__instance != null && __instance.playerHeldBy != null)
+            {
+                try
+                {
+                    float factor = GetMarksmanFactor(__instance.playerHeldBy);
+                    if (factor > 0.05f && factor < 0.999f)
+                    {
+                        PiggyVarietyMod.Plugin.rifleReloadSpeed = 1.0f / factor;
+                    }
+                    else
+                    {
+                        PiggyVarietyMod.Plugin.rifleReloadSpeed = 1.0f;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 4. DAMAGE REBALANCING & EXECUTION INSTANT KILL
         // ---------------------------------------------------------
         private static int _revolverDmgStep = 0;
         private static int _rifleDmgStep = 0;
@@ -333,17 +473,30 @@ namespace SonOfCompany_CustomPatches.Patches
         [HarmonyPrefix]
         private static void EnemyAI_HitEnemy_Weapons(EnemyAI __instance, ref int force, PlayerControllerB playerWhoHit)
         {
-            if (playerWhoHit == null || playerWhoHit.currentlyHeldObjectServer == null) return;
+            if (__instance == null || playerWhoHit == null || playerWhoHit.currentlyHeldObjectServer == null) return;
 
             var held = playerWhoHit.currentlyHeldObjectServer;
 
-            // Revolver: Trung bình chính xác 4.25 (4, 4, 4, 5)
-            if (held is RevolverItem)
+            if (held is RevolverItem revolver)
             {
+                var state = GetRouletteState(revolver);
+                if (state != null && state.isExecutionMode)
+                {
+                    // EXECUTION REVOLVER: INSTANT DEATH CHO MỌI MONSTER (BAO GỒM TẤT CẢ IMMORTAL MONSTERS)
+                    CustomPatchesPlugin.Log.LogInfo($"[Execution Revolver] INSTANT DEATH executed on {__instance.enemyType?.enemyName ?? __instance.name}!");
+                    __instance.enemyHP = 0;
+                    __instance.isEnemyDead = true;
+                    force = 999999;
+                    try { __instance.KillEnemyOnOwnerClient(false); } catch { }
+                    try { __instance.KillEnemyServerRpc(false); } catch { }
+                    try { __instance.KillEnemy(false); } catch { }
+                    return;
+                }
+
+                // Revolver thường: Trung bình 4.25
                 _revolverDmgStep = (_revolverDmgStep + 1) % 4;
                 force = (_revolverDmgStep == 0) ? 5 : 4;
             }
-            // Rifle (M4): Trung bình chính xác 1.25 (1, 1, 1, 2)
             else if (held is M4Item || held.GetType().Name == "M4Item")
             {
                 _rifleDmgStep = (_rifleDmgStep + 1) % 4;
@@ -375,7 +528,7 @@ namespace SonOfCompany_CustomPatches.Patches
         }
 
         // ---------------------------------------------------------
-        // 4. ANIMATION RESTORATION ON POCKET / DISCARD
+        // 5. ANIMATION RESTORATION ON POCKET / DISCARD
         // ---------------------------------------------------------
         [HarmonyPatch(typeof(GrabbableObject), "PocketItem")]
         [HarmonyPostfix]
